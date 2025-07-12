@@ -55,13 +55,26 @@ function bulkDeployToScriptIds() {
   Logger.log('Results:\n' + results.join('\n'));
 }
 
+function getLibraryVersionFromSheet() {
+  const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Deployment Config');
+  if (!sheet) throw new Error('The "Deployment Config" sheet does not exist');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === 'VERSION') {
+      return data[i][1];
+    }
+  }
+  throw new Error('VERSION not found in Deployment Config');
+}
+
 function updateScriptWithLibraryAndMenuAPI(scriptId, libraryId) {
   var service = getOAuthService();
+  var version = getLibraryVersionFromSheet();
   var manifest = { timeZone: 'America/New_York', dependencies: { libraries: [] }, exceptionLogging: 'STACKDRIVER' };
   var lib = {
     libraryId: libraryId,
     userSymbol: 'PROSPR',
-    version: '4',
+    version: version,
     developmentMode: false
   };
   manifest.dependencies.libraries = [lib];
