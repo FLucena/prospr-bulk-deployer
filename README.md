@@ -41,10 +41,10 @@ This solution allows you to **bulk update and manage Google Apps Script projects
 3. **Prepare your Google Sheet**
    - Sheet name: `Client URLs`
    - Column C: Script IDs of client scripts to update
-   - Sheet name: `Deployment Config` (for library ID)
+   - Sheet name: `Deployment Config` (must include fields `LIBRARY_ID` and `VERSION`)
 4. **Configure the script**
    - Set your spreadsheet ID in `SS_ID`.
-   - Set the correct library version and identifier in the manifest.
+   - The library version and identifier are set dynamically from the `VERSION` and `LIBRARY_ID` fields in the `Deployment Config` sheet.
 5. **Run `bulkDeployToScriptIds()`**
    - The script will update all listed client scripts with the new menu and library linkage.
 
