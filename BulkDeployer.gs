@@ -1,16 +1,22 @@
-const SS_ID = '1JYRe9U6HcuKekZY7IV3L-AtBKv5qktcqhr0_fYNeE_Y';
+const SS_ID = '1JYRe9U6HcuKekZY7IV3L-AtBKv5qktcqhr0_fYNeE_Y'; // Main control spreadsheet ID
 
+/**
+ * Returns an authorized OAuth2 service for Apps Script API calls.
+ */
 function getOAuthService() {
   return OAuth2.createService('appsScript')
     .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/auth')
     .setTokenUrl('https://accounts.google.com/o/oauth2/token')
-    .setClientId(GOOGLE_CLIENT_ID) // <-- Replace with your client ID
-    .setClientSecret(GOOGLE_CLIENT_SECRET) // <-- Replace with your client secret
+    .setClientId(GOOGLE_CLIENT_ID) // <-- Set in your local config, do not commit secrets
+    .setClientSecret(GOOGLE_CLIENT_SECRET) // <-- Set in your local config, do not commit secrets
     .setCallbackFunction('authCallback')
     .setPropertyStore(PropertiesService.getUserProperties())
     .setScope('https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive');
 }
 
+/**
+ * OAuth2 callback for authorization flow.
+ */
 function authCallback(request) {
   var service = getOAuthService();
   var authorized = service.handleCallback(request);
@@ -21,6 +27,9 @@ function authCallback(request) {
   }
 }
 
+/**
+ * Ensures the script is authorized before making API calls.
+ */
 function authorize() {
   var service = getOAuthService();
   if (!service.hasAccess()) {
@@ -32,10 +41,18 @@ function authorize() {
   return true;
 }
 
+/**
+ * Updates a client script project with the latest menu and library linkage.
+ * @param {string} scriptId - The Apps Script project ID to update.
+ * @param {string} libraryId - The PROSPR library ID to link.
+ */
 function deployToClientViaAPI(scriptId, libraryId) {
   updateScriptWithLibraryAndMenuAPI(scriptId, libraryId);
 }
 
+/**
+ * Bulk update all client scripts listed in the Client URLs sheet (column C).
+ */
 function bulkDeployToScriptIds() {
   if (!authorize()) return;
   const scriptIds = getClientScriptIds();
@@ -55,6 +72,10 @@ function bulkDeployToScriptIds() {
   Logger.log('Results:\n' + results.join('\n'));
 }
 
+/**
+ * Reads the library version from the Deployment Config sheet (field 'VERSION').
+ * @returns {string} The library version to use.
+ */
 function getLibraryVersionFromSheet() {
   const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Deployment Config');
   if (!sheet) throw new Error('The "Deployment Config" sheet does not exist');
@@ -67,9 +88,15 @@ function getLibraryVersionFromSheet() {
   throw new Error('VERSION not found in Deployment Config');
 }
 
+/**
+ * Updates the script project with the PROSPR library and menu wiring code.
+ * @param {string} scriptId - The Apps Script project ID to update.
+ * @param {string} libraryId - The PROSPR library ID to link.
+ */
 function updateScriptWithLibraryAndMenuAPI(scriptId, libraryId) {
   var service = getOAuthService();
   var version = getLibraryVersionFromSheet();
+  // Build manifest with dynamic library version
   var manifest = { timeZone: 'America/New_York', dependencies: { libraries: [] }, exceptionLogging: 'STACKDRIVER' };
   var lib = {
     libraryId: libraryId,
@@ -78,6 +105,7 @@ function updateScriptWithLibraryAndMenuAPI(scriptId, libraryId) {
     developmentMode: false
   };
   manifest.dependencies.libraries = [lib];
+  // Injected code: menu and wrappers for library functions
   var code = `
 function onOpen() {
   PROSPR.createAdminMenu();
@@ -122,6 +150,10 @@ function sendReportEmail() {
   }
 }
 
+/**
+ * Reads the PROSPR library ID from the Deployment Config sheet.
+ * @returns {string} The library ID to use.
+ */
 function getLibraryIdFromSheet() {
   const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Deployment Config');
   if (!sheet) throw new Error('The "Deployment Config" sheet does not exist');
@@ -134,6 +166,10 @@ function getLibraryIdFromSheet() {
   throw new Error('LIBRARY_ID not found in Deployment Config');
 }
 
+/**
+ * Reads all client script IDs from the Client URLs sheet (column C).
+ * @returns {string[]} Array of script IDs.
+ */
 function getClientScriptIds() {
   const sheet = SpreadsheetApp.openById(SS_ID).getSheetByName('Client URLs');
   if (!sheet) throw new Error('The "Client URLs" sheet does not exist');
