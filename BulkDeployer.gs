@@ -1,6 +1,28 @@
 const SS_ID = '1JYRe9U6HcuKekZY7IV3L-AtBKv5qktcqhr0_fYNeE_Y'; // Main control spreadsheet ID
 
 /**
+ * Bulk update all client scripts listed in the Client URLs sheet (column C).
+ */
+function bulkDeployToScriptIds() {
+  if (!authorize()) return;
+  const scriptIds = getClientScriptIds();
+  const libraryId = getLibraryIdFromSheet();
+  let results = [];
+  for (const scriptId of scriptIds) {
+    try {
+      if (!scriptId) {
+        throw new Error('scriptId is undefined or empty for this row.');
+      }
+      updateScriptWithLibraryAndMenuAPI(scriptId, libraryId);
+      results.push('✅ ' + scriptId);
+    } catch (e) {
+      results.push('❌ ' + scriptId + ' - ' + e.message);
+    }
+  }
+  Logger.log('Results:\n' + results.join('\n'));
+}
+
+/**
  * Returns an authorized OAuth2 service for Apps Script API calls.
  */
 function getOAuthService() {
@@ -48,28 +70,6 @@ function authorize() {
  */
 function deployToClientViaAPI(scriptId, libraryId) {
   updateScriptWithLibraryAndMenuAPI(scriptId, libraryId);
-}
-
-/**
- * Bulk update all client scripts listed in the Client URLs sheet (column C).
- */
-function bulkDeployToScriptIds() {
-  if (!authorize()) return;
-  const scriptIds = getClientScriptIds();
-  const libraryId = getLibraryIdFromSheet();
-  let results = [];
-  for (const scriptId of scriptIds) {
-    try {
-      if (!scriptId) {
-        throw new Error('scriptId is undefined or empty for this row.');
-      }
-      updateScriptWithLibraryAndMenuAPI(scriptId, libraryId);
-      results.push('✅ ' + scriptId);
-    } catch (e) {
-      results.push('❌ ' + scriptId + ' - ' + e.message);
-    }
-  }
-  Logger.log('Results:\n' + results.join('\n'));
 }
 
 /**
